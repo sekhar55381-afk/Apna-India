@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apna India</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#ff9933,#fff,#138808);
+text-align:center;
+}
+header{
+background:black;
+color:white;
+padding:15px;
+font-size:22px;
+}
+button{
+padding:8px 12px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+.login-btn{background:#4285F4;color:white;}
+.logout-btn{background:red;color:white;}
+.like-btn{background:#e91e63;color:white;margin-top:10px;}
+.admin-panel{
+display:none;
+background:#000;
+color:white;
+padding:15px;
+margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<header>
+Apna India 🇮🇳
+<button id="loginBtn" class="login-btn">Login</button>
+<button id="logoutBtn" class="logout-btn" style="display:none;">Logout</button>
+</header>
+
+<br>
+
+<input type="text" id="searchInput" placeholder="Search your problem...">
+<button onclick="searchVideo()">Search</button>
+
+<div id="videoResult"></div>
+
+<br>
+<button class="like-btn" onclick="likePost()">❤️ Like (<span id="likeCount">0</span>)</button>
+
+<br><br>
+<input type="text" id="commentInput" placeholder="Write comment...">
+<button onclick="addComment()">Post</button>
+<div id="comments"></div>
+
+<div class="admin-panel" id="adminPanel">
+<h3>Admin Panel</h3>
+<p>Welcome Admin 👑</p>
+</div>
+
+<!-- Contact Section -->
+<div style="margin-top:40px;background:#000;color:white;padding:20px;">
+<h3>Report / Contact</h3>
+<p><a href="https://www.instagram.com/kingsekhar.ok" target="_blank" style="color:#ff4081;">Instagram</a></p>
+<p><a href="https://www.facebook.com/share/17rvshpYV6/" target="_blank" style="color:#2196f3;">Facebook</a></p>
+<p><a href="mailto:yourgmail@gmail.com" style="color:#4caf50;">Email</a></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDCXJMy7N6qLA-rx4vZ6bcyt2Jf9iUXJnM",
+  authDomain: "apna-india-75fe4.firebaseapp.com",
+  projectId: "apna-india-75fe4",
+  storageBucket: "apna-india-75fe4.firebasestorage.app",
+  messagingSenderId: "797238164989",
+  appId: "1:797238164989:web:8e8f12730206d5c2e22d94"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+
+document.getElementById("loginBtn").onclick = () => {
+signInWithPopup(auth, provider);
+};
+
+document.getElementById("logoutBtn").onclick = () => {
+signOut(auth);
+};
+
+onAuthStateChanged(auth, (user) => {
+if(user){
+document.getElementById("loginBtn").style.display="none";
+document.getElementById("logoutBtn").style.display="inline-block";
+
+if(user.email==="yourgmail@gmail.com"){
+document.getElementById("adminPanel").style.display="block";
+}
+}else{
+document.getElementById("loginBtn").style.display="inline-block";
+document.getElementById("logoutBtn").style.display="none";
+document.getElementById("adminPanel").style.display="none";
+}
+});
+
+let likeRef = doc(db,"website","likes");
+
+async function loadLikes(){
+const snap = await getDoc(likeRef);
+if(snap.exists()){
+document.getElementById("likeCount").innerText=snap.data().count;
+}else{
+await setDoc(likeRef,{count:0});
+}
+}
+loadLikes();
+
+window.likePost = async function(){
+await updateDoc(likeRef,{count:increment(1)});
+loadLikes();
+}
+
+window.searchVideo = function(){
+let query=document.getElementById("searchInput").value;
+document.getElementById("videoResult").innerHTML=
+`<iframe width="90%" height="315"
+src="https://www.youtube.com/embed?listType=search&list=${query}"
+frameborder="0" allowfullscreen></iframe>`;
+}
+
+window.addComment = async function(){
+let text=document.getElementById("commentInput").value;
+if(text!=""){
+await addDoc(collection(db,"comments"),{text});
+document.getElementById("commentInput").value="";
+}
+}
+
+onSnapshot(collection(db,"comments"),(snapshot)=>{
+let html="";
+snapshot.forEach(doc=>{
+html+=`<p>${doc.data().text}</p>`;
+});
+document.getElementById("comments").innerHTML=html;
+});
+</script>
+
+</body>
+</html>
